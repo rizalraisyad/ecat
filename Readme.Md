@@ -69,7 +69,7 @@ All related dependencies which are needed to run the project will be listed belo
 | `tag_id`           | INT       | PRIMARY KEY, AUTO_INCREMENT | Unique identifier for each tag |
 | `tag_name`         | VARCHAR(255) | NOT NULL         | Name of the tag                 |
 
-### **Product Tags Mapping**
+### **Product Tags Link**
 
 | Column Name        | Data Type | Constraints        | Description                     |
 |--------------------|-----------|--------------------|---------------------------------|
