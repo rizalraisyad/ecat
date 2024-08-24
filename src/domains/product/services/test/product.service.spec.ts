@@ -15,6 +15,8 @@ import { ProductRepository } from '../../repositories/product.repository.';
 import { ProductService } from './../product.service';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Product } from '../../entities/product.entity';
+import { ProductTag } from '../../entities/product-tag.entity';
+import { ProductTagLink } from '../../entities/product-tag-link.entity';
 
 describe('ProductService', () => {
   let service: ProductService;
@@ -36,29 +38,43 @@ describe('ProductService', () => {
         return Promise.resolve(null);
       }),
       save: jest.fn(),
+      delete: jest.fn(),
     };
 
     mockProductVarietyRepository = {
       saveProductVar: jest.fn(),
       find: jest.fn().mockResolvedValue([]),
       remove: jest.fn(),
+      delete: jest.fn(),
     };
 
     mockProductImageRepository = {
       saveProductImage: jest.fn(),
       find: jest.fn().mockResolvedValue([]),
       remove: jest.fn(),
+      delete: jest.fn(),
     };
 
     mockProductTagRepository = {
       findProductTag: jest.fn().mockImplementation(() => null),
       saveProductTag: jest.fn(),
+      delete: jest.fn(),
+      findOne: jest.fn().mockResolvedValue(null),
+      create: jest.fn().mockResolvedValue(null),
+      save: jest.fn().mockResolvedValue(() => {
+        Promise.resolve(new ProductTag());
+      }),
     };
 
     mockProductTagLinkRepository = {
       saveProductTagLink: jest.fn(),
       find: jest.fn().mockResolvedValue([]),
       remove: jest.fn(),
+      delete: jest.fn(),
+      create: jest.fn().mockResolvedValue(null),
+      save: jest.fn().mockResolvedValue(() => {
+        Promise.resolve(new ProductTagLink());
+      }),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -170,5 +186,25 @@ describe('ProductService', () => {
     expect(
       mockProductTagLinkRepository.saveProductTagLink,
     ).not.toHaveBeenCalled();
+  });
+
+  it('should delete a product and its dependencies correctly', async () => {
+    const id = 1;
+
+    await service.deleteProduct(id);
+
+    expect(mockProductRepository.findProductById).toHaveBeenCalledWith(id);
+    expect(mockProductVarietyRepository.delete).toHaveBeenCalledWith({
+      product: { productId: id },
+    });
+    expect(mockProductImageRepository.delete).toHaveBeenCalledWith({
+      product: { productId: id },
+    });
+    expect(mockProductTagLinkRepository.delete).toHaveBeenCalledWith({
+      product: { productId: id },
+    });
+    expect(mockProductRepository.delete).toHaveBeenCalledWith({
+      productId: id,
+    });
   });
 });

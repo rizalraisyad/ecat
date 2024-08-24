@@ -1,4 +1,12 @@
-import { Controller, Inject, Body, Post, Put, Param } from '@nestjs/common';
+import {
+  Controller,
+  Inject,
+  Body,
+  Post,
+  Put,
+  Param,
+  Delete,
+} from '@nestjs/common';
 import { PRODUCT_SERVICE } from '../product.constant';
 import { CreateProductDto } from '../dto/create-product.dto';
 import { ProductService } from '../services/product.service';
@@ -47,5 +55,13 @@ export class ProductController {
     @Body() updateProductDto: CreateProductDto,
   ) {
     return this.productService.updateProduct(id, updateProductDto);
+  }
+
+  @Delete(':id')
+  @ApiOperation({ summary: 'Delete a product by ID' })
+  @ApiResponse({ status: 204, description: 'Product successfully deleted.' })
+  @ApiResponse({ status: 404, description: 'Product not found.' })
+  async deleteProduct(@Param('id') id: number): Promise<void> {
+    await this.productService.deleteProduct(id);
   }
 }

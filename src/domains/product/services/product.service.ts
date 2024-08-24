@@ -184,13 +184,29 @@ export class ProductService {
       relations: ['tag'],
     });
 
+    const existingTagNames = new Set(
+      existingTags.map((tagLink) => tagLink.tag.tagName),
+    );
+
     for (const tagLink of existingTags) {
       if (!tags.includes(tagLink.tag.tagName)) {
         await this.productTagLinkRepository.remove(tagLink);
       }
     }
 
-    await this.addProductTags(product, tags);
+    for (const tagName of tags) {
+      if (!existingTagNames.has(tagName)) {
+        let tag = await this.productTagRepository.findOne({
+          where: { tagName },
+        });
+        if (!tag) {
+          tag = this.productTagRepository.create({ tagName });
+          await this.productTagRepository.save(tag);
+        }
+        const tagLink = this.productTagLinkRepository.create({ product, tag });
+        await this.productTagLinkRepository.save(tagLink);
+      }
+    }
   }
 
   async updateProduct(
@@ -226,5 +242,19 @@ export class ProductService {
     }
 
     return product;
+  }
+
+  async deleteProduct(id: number): Promise<void> {
+    const product = await this.productRepository.findProductById(id);
+
+    if (!product) {
+      throw new NotFoundException(`Product with ID ${id} not found.`);
+    }
+
+    await this.productVarietyRepository.delete({ product: { productId: id } });
+    await this.productImageRepository.delete({ product: { productId: id } });
+    await this.productTagLinkRepository.delete({ product: { productId: id } });
+
+    await this.productRepository.delete({ productId: id });
   }
 }
