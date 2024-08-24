@@ -21,6 +21,8 @@ import { ProductVarietyRepository } from '../repositories/product-variety.reposi
 import { ProductImageRepository } from '../repositories/product-image.repository';
 import { ProductTagRepository } from '../repositories/product-tag.repository';
 import { ProductTagLinkRepository } from '../repositories/product-tag-link.repository';
+import { FindManyOptions, Like } from 'typeorm';
+import { PaginationDto } from '../dto/pagination.dto';
 
 @Injectable()
 export class ProductService {
@@ -256,5 +258,49 @@ export class ProductService {
     await this.productTagLinkRepository.delete({ product: { productId: id } });
 
     await this.productRepository.delete({ productId: id });
+  }
+
+  async getProductById(id: number): Promise<Product> {
+    const product = await this.productRepository.findOne({
+      where: { productId: id },
+      relations: ['varieties', 'images', 'tagLinks', 'tagLinks.tag'],
+    });
+
+    if (!product) {
+      throw new NotFoundException(`Product with ID ${id} not found.`);
+    }
+
+    return product;
+  }
+
+  async getProducts(
+    paginationDto: PaginationDto,
+    searchQuery?: string,
+  ): Promise<[Product[], number]> {
+    const { page, limit } = paginationDto;
+    const skip = (page - 1) * limit;
+
+    const options: FindManyOptions<Product> = {
+      relations: ['varieties', 'images', 'tagLinks', 'tagLinks.tag'],
+      skip,
+      take: limit,
+      where: [],
+    };
+
+    if (searchQuery) {
+      options.where = [
+        { productName: Like(`%${searchQuery}%`) },
+        { tagLinks: { tag: { tagName: Like(`%${searchQuery}%`) } } },
+      ];
+    }
+
+    const [products, count] =
+      await this.productRepository.findAndCount(options);
+
+    products.forEach((product) => {
+      product.images = product.images.filter((image) => image.isPrimary);
+    });
+
+    return [products, count];
   }
 }

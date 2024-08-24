@@ -17,6 +17,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { Product } from '../../entities/product.entity';
 import { ProductTag } from '../../entities/product-tag.entity';
 import { ProductTagLink } from '../../entities/product-tag-link.entity';
+import { PaginationDto } from '../../dto/pagination.dto';
+import { Like } from 'typeorm';
 
 describe('ProductService', () => {
   let service: ProductService;
@@ -39,6 +41,8 @@ describe('ProductService', () => {
       }),
       save: jest.fn(),
       delete: jest.fn(),
+      findOne: jest.fn(),
+      findAndCount: jest.fn(),
     };
 
     mockProductVarietyRepository = {
@@ -99,6 +103,131 @@ describe('ProductService', () => {
 
   it('should be defined', () => {
     expect(service).toBeDefined();
+  });
+
+  describe('getProductById', () => {
+    it('should return a product with all relations', async () => {
+      const productId = 1;
+      const mockProduct = new Product();
+      mockProduct.productId = productId;
+      mockProduct.productName = 'Test Product';
+      mockProduct.images = [
+        {
+          imageUrl: 'http://example.com/image.jpg', isPrimary: true,
+          imageId: 0,
+          product: new Product(),
+        },
+      ];
+
+      (mockProductRepository.findOne as jest.Mock).mockResolvedValue(
+        mockProduct,
+      );
+
+      const result = await service.getProductById(productId);
+
+      expect(mockProductRepository.findOne).toHaveBeenCalledWith({
+        where: { productId },
+        relations: ['varieties', 'images', 'tagLinks', 'tagLinks.tag'],
+      });
+      expect(result).toEqual(mockProduct);
+    });
+
+    it('should throw a NotFoundException if the product is not found', async () => {
+      const productId = 999;
+
+      (mockProductRepository.findOne as jest.Mock).mockResolvedValue(null);
+
+      await expect(service.getProductById(productId)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
+
+  describe('getProducts', () => {
+    it('should return paginated products with the primary image only', async () => {
+      const paginationDto: PaginationDto = { page: 1, limit: 10 };
+      const mockProducts = [
+        {
+          productId: 1,
+          productName: 'Test Product 1',
+          images: [
+            { imageUrl: 'http://example.com/image1.jpg', isPrimary: true },
+            { imageUrl: 'http://example.com/image2.jpg', isPrimary: false },
+          ],
+          varieties: [],
+          tagLinks: [],
+        },
+        {
+          productId: 2,
+          productName: 'Test Product 2',
+          images: [
+            { imageUrl: 'http://example.com/image3.jpg', isPrimary: true },
+          ],
+          varieties: [],
+          tagLinks: [],
+        },
+      ];
+
+      (mockProductRepository.findAndCount as jest.Mock).mockResolvedValue([
+        mockProducts,
+        mockProducts.length,
+      ]);
+
+      const result = await service.getProducts(paginationDto);
+
+      expect(mockProductRepository.findAndCount).toHaveBeenCalledWith({
+        relations: ['varieties', 'images', 'tagLinks', 'tagLinks.tag'],
+        skip: 0,
+        take: 10,
+        where: [],
+      });
+
+      // Check if only primary images are included
+      expect(result[0][0].images.length).toBe(1);
+      expect(result[0][0].images[0].imageUrl).toBe(
+        'http://example.com/image1.jpg',
+      );
+      expect(result[0][1].images.length).toBe(1);
+      expect(result[0][1].images[0].imageUrl).toBe(
+        'http://example.com/image3.jpg',
+      );
+    });
+
+    it('should return paginated products filtered by search query', async () => {
+      const paginationDto: PaginationDto = { page: 1, limit: 10 };
+      const searchQuery = 'Test';
+      const mockProducts = [
+        {
+          productId: 1,
+          productName: 'Test Product 1',
+          images: [
+            { imageUrl: 'http://example.com/image1.jpg', isPrimary: true },
+          ],
+          varieties: [],
+          tagLinks: [{ tag: { tagName: 'TestTag' } }],
+        },
+      ];
+
+      (mockProductRepository.findAndCount as jest.Mock).mockResolvedValue([
+        mockProducts,
+        mockProducts.length,
+      ]);
+
+      const result = await service.getProducts(paginationDto, searchQuery);
+
+      expect(mockProductRepository.findAndCount).toHaveBeenCalledWith({
+        relations: ['varieties', 'images', 'tagLinks', 'tagLinks.tag'],
+        skip: 0,
+        take: 10,
+        where: [
+          { productName: Like(`%${searchQuery}%`) },
+          { tagLinks: { tag: { tagName: Like(`%${searchQuery}%`) } } },
+        ],
+      });
+
+      expect(result[0]).toEqual(mockProducts);
+      expect(result[1]).toBe(mockProducts.length);
+    });
   });
 
   it('should create a product and its dependencies correctly', async () => {
