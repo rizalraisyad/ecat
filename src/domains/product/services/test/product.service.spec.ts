@@ -113,7 +113,8 @@ describe('ProductService', () => {
       mockProduct.productName = 'Test Product';
       mockProduct.images = [
         {
-          imageUrl: 'http://example.com/image.jpg', isPrimary: true,
+          imageUrl: 'http://example.com/image.jpg',
+          isPrimary: true,
           imageId: 0,
           product: new Product(),
         },
