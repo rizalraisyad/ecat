@@ -2,12 +2,26 @@
 
 ECat A service to manage product.
 
+## Features
+
+- **CRUD Operations**: Create, Read, Update, and Delete products.
+- **Pagination and Search**: Paginated product listings with search functionality.
+- **Relationships**: Products can have varieties, images, and tags.
 
 ## Dependencies
 All related dependencies which are needed to run the project will be listed below
 - [NodeJS](https://nodejs.org/en/download/)
 - Working [SqLite](https://www.sqlite.org/) instance
 - [Yarn](https://yarnpkg.com/) package manager
+- [Docker](https://www.docker.com/get-started) installed on your machine.
+
+
+### Using Docker
+
+1. Pull the Docker image from Docker Hub:
+
+   ```bash
+   docker pull rizalraisyad/ecat:latest
 
 ## Installation
 First of all before running the app you need install first using the script
@@ -31,6 +45,11 @@ $ yarn test:cov
 
 ```bash
 $ yarn start:dev
+```
+
+using docker
+```
+docker run -p 3000:3000 rizalraisyad/ecat
 ```
 
 ## API Documentation
