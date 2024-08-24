@@ -1,6 +1,10 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { ProductRepository } from '../repositories/product.repository.';
-import { CreateProductDto } from '../dto/create-product.dto';
+import {
+  CreateProductDto,
+  ImageDto,
+  VarietyDto,
+} from '../dto/create-product.dto';
 import { Product } from '../entities/product.entity';
 import { ProductVariety } from '../entities/product-variety.entity';
 import { ProductImage } from '../entities/product-image.entity';
@@ -32,25 +36,6 @@ export class ProductService {
     @Inject(PRODUCTTAGLINK_REPO)
     private productTagLinkRepository: ProductTagLinkRepository,
   ) {}
-  async addProduct(createProductDto: CreateProductDto): Promise<Product> {
-    const reqProduct = this.createProductEntity(createProductDto);
-    const product = await this.productRepository.save(reqProduct);
-
-    if (createProductDto.varieties) {
-      await this.addProductVarieties(product, createProductDto.varieties);
-    }
-
-    if (createProductDto.images) {
-      await this.addProductImages(product, createProductDto.images);
-    }
-
-    if (createProductDto.tags) {
-      await this.addProductTags(product, createProductDto.tags);
-    }
-
-    return product;
-  }
-
   private createProductEntity(createProductDto: CreateProductDto): Product {
     const { productName, productDescription, productCondition, weight } =
       createProductDto;
@@ -106,5 +91,140 @@ export class ProductService {
       tagLink.tag = tag;
       await this.productTagLinkRepository.saveProductTagLink(tagLink);
     }
+  }
+
+  async addProduct(createProductDto: CreateProductDto): Promise<Product> {
+    const reqProduct = this.createProductEntity(createProductDto);
+    const product = await this.productRepository.saveProduct(reqProduct);
+
+    if (createProductDto.varieties) {
+      await this.addProductVarieties(product, createProductDto.varieties);
+    }
+
+    if (createProductDto.images) {
+      await this.addProductImages(product, createProductDto.images);
+    }
+
+    if (createProductDto.tags) {
+      await this.addProductTags(product, createProductDto.tags);
+    }
+
+    return product;
+  }
+
+  private async updateProductVarieties(
+    product: Product,
+    varietiesDto: VarietyDto[],
+  ): Promise<void> {
+    const existingVarieties = await this.productVarietyRepository.find({
+      where: { product: { productId: product.productId } },
+    });
+
+    const varietyDtoMap = new Map(
+      varietiesDto.map((dto) => [dto.varietyName, dto]),
+    );
+
+    for (const variety of existingVarieties) {
+      const dto = varietyDtoMap.get(variety.varietyName);
+      if (dto) {
+        variety.varietyPrice = dto.varietyPrice;
+        variety.stockQuantity = dto.stock;
+        await this.productVarietyRepository.saveProductVar(variety);
+        varietyDtoMap.delete(variety.varietyName);
+      } else {
+        await this.productVarietyRepository.remove(variety);
+      }
+    }
+
+    for (const dto of varietyDtoMap.values()) {
+      const newVariety = new ProductVariety();
+      newVariety.product = product;
+      newVariety.varietyName = dto.varietyName;
+      newVariety.varietyPrice = dto.varietyPrice;
+      newVariety.stockQuantity = dto.stock;
+      await this.productVarietyRepository.saveProductVar(newVariety);
+    }
+  }
+
+  private async updateProductImages(
+    product: Product,
+    imagesDto: ImageDto[],
+  ): Promise<void> {
+    const existingImages = await this.productImageRepository.find({
+      where: { product: { productId: product.productId } },
+    });
+    const imageDtoMap = new Map(imagesDto.map((dto) => [dto.imageUrl, dto]));
+
+    for (const image of existingImages) {
+      const dto = imageDtoMap.get(image.imageUrl);
+      if (dto) {
+        image.isPrimary = dto.isPrimary;
+        await this.productImageRepository.saveProductImage(image);
+        imageDtoMap.delete(image.imageUrl);
+      } else {
+        await this.productImageRepository.remove(image);
+      }
+    }
+
+    for (const dto of imageDtoMap.values()) {
+      const newImage = new ProductImage();
+      newImage.product = product;
+      newImage.imageUrl = dto.imageUrl;
+      newImage.isPrimary = dto.isPrimary;
+      await this.productImageRepository.saveProductImage(newImage);
+    }
+  }
+
+  private async updateProductTags(
+    product: Product,
+    tags: string[],
+  ): Promise<void> {
+    const existingTags = await this.productTagLinkRepository.find({
+      where: { product: { productId: product.productId } },
+      relations: ['tag'],
+    });
+
+    for (const tagLink of existingTags) {
+      if (!tags.includes(tagLink.tag.tagName)) {
+        await this.productTagLinkRepository.remove(tagLink);
+      }
+    }
+
+    await this.addProductTags(product, tags);
+  }
+
+  async updateProduct(
+    id: number,
+    createProductDto: CreateProductDto,
+  ): Promise<Product> {
+    const product = await this.productRepository.findProductById(id);
+
+    if (!product) {
+      throw new NotFoundException(`Product with ID ${id} not found.`);
+    }
+
+    product.productName = createProductDto.productName;
+    product.productDescription =
+      createProductDto.productDescription ?? product.productDescription;
+
+    product.productCondition =
+      createProductDto.productCondition ?? product.productCondition;
+
+    product.weight = createProductDto.weight ?? product.weight;
+    await this.productRepository.save(product);
+
+    if (createProductDto.varieties) {
+      await this.updateProductVarieties(product, createProductDto.varieties);
+    }
+
+    if (createProductDto.images) {
+      await this.updateProductImages(product, createProductDto.images);
+    }
+
+    if (createProductDto.tags) {
+      await this.updateProductTags(product, createProductDto.tags);
+    }
+
+    return product;
   }
 }

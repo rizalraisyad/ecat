@@ -1,4 +1,4 @@
-import { Controller, Inject, Body, Post } from '@nestjs/common';
+import { Controller, Inject, Body, Post, Put, Param } from '@nestjs/common';
 import { PRODUCT_SERVICE } from '../product.constant';
 import { CreateProductDto } from '../dto/create-product.dto';
 import { ProductService } from '../services/product.service';
@@ -7,6 +7,8 @@ import {
   ApiOperation,
   ApiResponse,
   ApiCreatedResponse,
+  ApiParam,
+  ApiOkResponse,
 } from '@nestjs/swagger';
 import { Product } from '../entities/product.entity';
 
@@ -28,5 +30,22 @@ export class ProductController {
   @ApiResponse({ status: 500, description: 'Internal server error.' })
   createProduct(@Body() createProductDto: CreateProductDto) {
     return this.productService.addProduct(createProductDto);
+  }
+
+  @Put(':id')
+  @ApiParam({ name: 'id', description: 'Product ID', type: Number })
+  @ApiOperation({ summary: 'Update a product' })
+  @ApiOkResponse({
+    description: 'The product has been successfully updated.',
+    type: Product,
+  })
+  @ApiResponse({ status: 400, description: 'Invalid input data.' })
+  @ApiResponse({ status: 404, description: 'Product not found.' })
+  @ApiResponse({ status: 500, description: 'Internal server error.' })
+  updateProduct(
+    @Param('id') id: number,
+    @Body() updateProductDto: CreateProductDto,
+  ) {
+    return this.productService.updateProduct(id, updateProductDto);
   }
 }

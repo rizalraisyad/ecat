@@ -1,4 +1,4 @@
-import { Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { Product } from './product.entity';
 import { ProductTag } from './product-tag.entity';
 
@@ -8,8 +8,10 @@ export class ProductTagLink {
   linkId: number;
 
   @ManyToOne(() => Product, (product) => product.tagLinks)
+  @JoinColumn({ name: 'productId' })
   product: Product;
 
   @ManyToOne(() => ProductTag, (tag) => tag.tagLinks)
+  @JoinColumn({ name: 'tagId' })
   tag: ProductTag;
 }

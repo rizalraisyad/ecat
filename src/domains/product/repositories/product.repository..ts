@@ -11,4 +11,11 @@ export class ProductRepository extends Repository<Product> {
   saveProduct(product: Product): Promise<Product> {
     return this.save(product);
   }
+
+  findProductById(id: number): Promise<Product> {
+    return this.findOne({
+      where: { productId: id },
+      relations: ['varieties', 'images', 'tagLinks'],
+    });
+  }
 }
