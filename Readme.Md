@@ -36,6 +36,10 @@ $ yarn start:dev
 ## API Documentation
 All API documentation will be available on Swagger whenever the app is running. You can access it at localhost:YOURPORT/api. The default port is 3000. You can customize the port by changing the code in main.ts.
 
+Or
+
+[POSTMAN Documentation](https://www.postman.com/technical-specialist-42256706/workspace/ecat/overview)
+
 # Database Design
 
 ## **Tables**
