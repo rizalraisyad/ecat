@@ -1,12 +1,5 @@
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  ManyToOne,
-  OneToMany,
-} from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
 import { Product } from './product.entity';
-import { ProductStock } from './product-stock.entity';
 
 @Entity('product_varieties')
 export class ProductVariety {
@@ -22,6 +15,6 @@ export class ProductVariety {
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   varietyPrice: number;
 
-  @OneToMany(() => ProductStock, (stock) => stock.variety)
-  stocks: ProductStock[];
+  @Column({ type: 'int' })
+  stockQuantity: number;
 }

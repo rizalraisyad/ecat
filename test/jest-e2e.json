@@ -1,9 +1,12 @@
 {
+  "setupFiles": ["<rootDir>/test/jest-envar-e2e.ts"],
   "moduleFileExtensions": ["js", "json", "ts"],
-  "rootDir": ".",
+  "rootDir": "..",
+  "modulePaths": ["node_modules", "<rootDir>"],
   "testEnvironment": "node",
   "testRegex": ".e2e-spec.ts$",
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
-  }
+  },
+  "testTimeout": 30000
 }

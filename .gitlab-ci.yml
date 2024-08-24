@@ -1,0 +1,36 @@
+image: node:20.15.1-alpine
+
+stages:
+  - setup
+  - test
+  - build
+
+cache:
+  paths:
+    - node_modules/
+
+install_dependencies:
+  stage: setup
+  script:
+    - yarn install
+
+verify_lint:
+  stage: test
+  script:
+    yarn lint
+
+unit_testing:
+  stage: test
+  script:
+    yarn test
+
+build:
+  stage: build
+  when: always
+  artifacts:
+    expire_in: 1 week
+    paths:
+      - dist/
+    when: always
+  script:
+    - yarn build

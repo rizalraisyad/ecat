@@ -1,0 +1,8 @@
+{
+  "setupFiles": ["<rootDir>/test/jest-envar.ts"],
+  "rootDir": "..",
+  "modulePaths": ["node_modules", "<rootDir>"],
+  "transform": {
+    "^.+\\.(t|j)s$": "ts-jest"
+  }
+}
